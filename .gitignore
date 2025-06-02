@@ -1,0 +1,12 @@
+# Node.js
+node_modules/
+.env
+npm-debug.log*
+
+# Database/MongoDB
+/data/db/
+*.pid
+
+# Logs & uploads
+logs/
+uploads/
