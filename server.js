@@ -2,8 +2,10 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRoutes from './routes/auth.js'
-import User from "./models/User.js";
+import authRoutes from './routes/authRoutes.js'
+import User from "./models/UserModel.js";
+import Product from './models/ProductModel.js'
+import productRoutes from './routes/productRoutes.js';
 
 dotenv.config();
 
@@ -14,6 +16,8 @@ app.use(express.json({ limit: "10mb" })); // Body size limit
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded forms
 
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -25,12 +29,49 @@ app.get('/api/keepalive', (req, res) => {
   res.send('Keeping MongoDB awake!'); // Just a response to confirm it worked
 });
 
-// In your Express backend (e.g., server.js)
-app.get('/', async(req, res) => {
-  console.log("checkpoint")
-  const log = await User.find()
-  console.log(log);
-  res.end()
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    if (!req.params.id) {
+      return res.status(400).json({ error: "Product ID required" });
+    }
+
+    // Find by either _id or another unique field like productCode
+    const product = await Product.findOne({
+      $or: [
+        { _id: req.params.id },
+        { productCode: req.params.id } // Add if you have a productCode field
+      ]
+    }).lean();
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Add numReviews if your frontend expects it
+    product.numReviews = product.reviews?.length || 0;
+    
+    res.json(product);
+  } catch (err) {
+    console.error("Error fetching product:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await Product.find().lean();
+    
+    // Add numReviews to each product if needed
+    const enrichedProducts = products.map(p => ({
+      ...p,
+      numReviews: p.reviews?.length || 0
+    }));
+    
+    res.json(enrichedProducts); // Always return array (empty if no products)
+  } catch (err) {
+    console.error("Failed to fetch products:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 
