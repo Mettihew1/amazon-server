@@ -12,6 +12,45 @@ const calculateAverageRating = (reviews) => {
   return parseFloat((sum / reviews.length).toFixed(1));
 };
 
+
+
+// Get all products (for admin)
+router.get(
+  '/admin',
+  asyncHandler(async (req, res) => {
+    try {
+    const products = await Product.find({});
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+  })
+);
+
+// Update featured status
+router.put(
+  '/:id/featured',
+  asyncHandler(async (req, res) => {
+    try {
+      const product = await Product.findByIdAndUpdate(
+        req.params.id,
+        { featured: req.body.featured },
+        { new: true } // Return the updated document
+      );
+      
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      
+      res.json(product);
+    } catch (error) {
+      console.error('Error updating featured status:', error);
+      res.status(500).json({ message: 'Server Error' });
+    }
+  })
+);
+
+
 // @desc    Get featured products
 // @route   GET /api/products/featured
 // @access  Public
@@ -19,8 +58,9 @@ router.get(
   '/featured',
   asyncHandler(async (req, res) => {
     const featuredProducts = await Product.find({ featured: true })
-      .select('-reviews') // Exclude reviews if not needed
-      .limit(8);
+    .select('-reviews') // Exclude reviews if not needed
+    .limit(8);
+    console.log(featuredProducts);
     res.json(featuredProducts);
   })
 );
