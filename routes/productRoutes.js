@@ -11,8 +11,25 @@ const calculateAverageRating = (reviews) => {
   const sum = reviews.reduce((acc, item) => acc + item.rating, 0);
   return parseFloat((sum / reviews.length).toFixed(1));
 };
+ 
+// Search
+router.get('/search', asyncHandler(async (req, res) => {
+  const { q } = req.query;
+  
+  if (!q) {
+    return res.status(400).json({ message: "Search query is required" });
+  }
 
+  const products = await Product.find({
+    $or: [
+      { name: { $regex: q, $options: 'i' } },
+      { brand: { $regex: q, $options: 'i' } },
+      { category: { $regex: q, $options: 'i' } }
+    ]
+  });
 
+  res.json(products);
+}));
 
 // Get all products (for admin)
 router.get(

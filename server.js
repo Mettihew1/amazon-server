@@ -6,17 +6,27 @@ import authRoutes from './routes/authRoutes.js'
 import User from "./models/UserModel.js";
 import Product from './models/ProductModel.js'
 import productRoutes from './routes/productRoutes.js';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
+app.use(cookieParser());
+
 app.use(express.json({ limit: "10mb" })); // Body size limit
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded forms
 
 app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/prod', productRoutes);
 
 
 app.use((err, req, res, next) => {
@@ -29,7 +39,7 @@ app.get('/api/keepalive', (req, res) => {
   res.send('Keeping MongoDB awake!'); // Just a response to confirm it worked
 });
 
-app.get('/api/products/:id', async (req, res) => {
+app.get('/api/prod/:id', async (req, res) => {
   try {
     if (!req.params.id) {
       return res.status(400).json({ error: "Product ID required" });
@@ -57,19 +67,21 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-app.get('/api/products', async (req, res) => {
+app.get('/api/prod', async (req, res) => {
+  console.log("see me ?");
+  
   try {
-    const products = await Product.find().lean();
+    const prod = await Product.find().lean();
     
     // Add numReviews to each product if needed
-    const enrichedProducts = products.map(p => ({
+    const enrichedProducts = prod.map(p => ({
       ...p,
       numReviews: p.reviews?.length || 0
     }));
     
-    res.json(enrichedProducts); // Always return array (empty if no products)
+    res.json(enrichedProducts); // Always return array (empty if no prod)
   } catch (err) {
-    console.error("Failed to fetch products:", err);
+    console.error("Failed to fetch prod:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
